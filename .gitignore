@@ -1,0 +1,8 @@
+/.idea/*
+/bin/
+/vendor/
+/logs/*
+!/logs/README.md
+
+# Config files
+/src/settings.php
