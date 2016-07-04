@@ -1,5 +1,7 @@
 <?php
 
+// TODO distribute helpers method in different files
+
 function createClubArray($club) {
     // Defining postal address
     $address = array();
@@ -81,4 +83,18 @@ function getLang($request) {
     }
     
     return $lang;
+}
+
+function getUsers($db) {
+    $query = "SELECT username, password
+              FROM Personne";
+    $result = $db->prepare($query);
+    $result->execute();
+
+    $users = array();
+    while ($user = $result->fetch(PDO::FETCH_ASSOC)) {
+        $users[$user['username']] = $user['password'];
+    }
+    
+    return $users;
 }

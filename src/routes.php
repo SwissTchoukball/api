@@ -85,7 +85,6 @@ $app->get('/club/{id}', function(Request $request, Response $response) {
  * GET request for the members list of a specific club
  */
 $app->get('/club/{id}/members', function(Request $request, Response $response) {
-    //TODO use Authentication header to send username and hash
     $clubId = $request->getAttribute('id');
     $requestParams = $request->getQueryParams();
     $searchedTerm = $requestParams['query'];
@@ -191,6 +190,9 @@ $app->get('/venues', function(Request $request, Response $response) {
  */
 $app->post('/championship/register-team', function(Request $request, Response $response) {
     $registration = $request->getParsedBody();
+    
+    // TODO: Check that the club can register a team for this category.
+    // TODO: Add userId to addedBy field (add it to request from middleware)
 
     $query = "INSERT INTO Championnat_Equipes (
                   equipe,
