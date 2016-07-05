@@ -137,7 +137,14 @@ $app->get('/championship/categories-by-season', function(Request $request, Respo
               WHERE TIMESTAMP(ccps.deadline) > NOW()
               AND ccps.categoryId = cc.idCategorie";
 
-    $result = $this->db->prepare($query);
+    try {
+        $result = $this->db->prepare($query);
+    } catch (PDOException $e) {
+        return $response->withStatus(500)
+            ->withHeader('Content-Type', 'text/html')
+            ->write($e);
+    }
+
     $result->execute();
 
     $data = array();
@@ -192,9 +199,18 @@ $app->post('/championship/register-team', function(Request $request, Response $r
     $registration = $request->getParsedBody();
     
     // TODO: Check that the club can register a team for this category.
-    // TODO: Add userId to addedBy field (add it to request from middleware)
 
-    $query = "INSERT INTO Championnat_Equipes (
+    // Getting the user ID of the person who filled the form
+    try {
+        $userId = getUserIdFromUsername($this->db, $_SESSION['__username__']);
+    } catch (PDOException $e) {
+        return $response->withStatus(500)
+                        ->withHeader('Content-Type', 'text/html')
+                        ->write($e);
+    }
+
+    // Saving the team in the database
+    $queryTeam = "INSERT INTO Championnat_Equipes (
                   equipe,
                   idClub,
                   idResponsable,
@@ -202,23 +218,23 @@ $app->post('/championship/register-team', function(Request $request, Response $r
                   couleurMaillotDomicile,
                   couleurMaillotExterieur,
                   idLieuDomicile,
-                  addedBy,
-                  addedWhen
+                  registrationAuthorId,
+                  registrationDate
               )
               VALUES (
                   '{$registration['teamName']}',
-                  '{$registration['clubId']}',
-                  '{$registration['teamManagerId']}',
-                  '{$registration['categoryBySeasonId']}',
+                  {$registration['clubId']},
+                  {$registration['teamManagerId']},
+                  {$registration['categoryBySeasonId']},
                   '{$registration['jerseyColorHome']}',
                   '{$registration['jerseyColorAway']}',
-                  '{$registration['homeVenueId']}',
-                  0,
+                  {$registration['homeVenueId']},
+                  {$userId},
                   NOW()
               )";
 
     try {
-        $this->db->exec($query);
+        $this->db->exec($queryTeam);
         $newResponse = $response;
     } catch (PDOException $e) {
         $newResponse = $response->withStatus(500)
@@ -227,4 +243,6 @@ $app->post('/championship/register-team', function(Request $request, Response $r
     } finally {
         return $newResponse;
     }
+
+
 });

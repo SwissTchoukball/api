@@ -98,3 +98,17 @@ function getUsers($db) {
     
     return $users;
 }
+
+function getUserIdFromUsername($db, $username) {
+    $query = "SELECT id FROM Personne WHERE username = '" . $username . "'";
+    $result = $db->prepare($query);
+    $result->execute();
+
+    try {
+        $user = $result->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        throw $e;
+    }
+
+    return $user['id'];
+}
