@@ -139,13 +139,12 @@ $app->get('/championship/categories-by-season', function(Request $request, Respo
 
     try {
         $result = $this->db->prepare($query);
+        $result->execute();
     } catch (PDOException $e) {
         return $response->withStatus(500)
             ->withHeader('Content-Type', 'text/html')
             ->write($e);
     }
-
-    $result->execute();
 
     $data = array();
     while ($registration = $result->fetch(PDO::FETCH_ASSOC)) {
@@ -197,52 +196,120 @@ $app->get('/venues', function(Request $request, Response $response) {
  */
 $app->post('/championship/register-team', function(Request $request, Response $response) {
     $registration = $request->getParsedBody();
-    
-    // TODO: Check that the club can register a team for this category.
 
     // Getting the user ID of the person who filled the form
     try {
         $userId = getUserIdFromUsername($this->db, $_SESSION['__username__']);
     } catch (PDOException $e) {
         return $response->withStatus(500)
-                        ->withHeader('Content-Type', 'text/html')
-                        ->write($e);
+            ->withHeader('Content-Type', 'text/html')
+            ->write($e);
+    }
+
+    // Getting information regarding if a club can only register a limited number of team in a category
+    $spotLimitationQuery = "SELECT c.isNbSpotLimitedByClub
+                            FROM Championnat_Categories c, Championnat_Categories_Par_Saison cps
+                            WHERE c.idCategorie = cps.categoryId
+                            AND cps.id = {$registration['categoryBySeasonId']}";
+    try {
+        $result = $this->db->prepare($spotLimitationQuery);
+        $result->execute();
+        $data = $result->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        return $response->withStatus(500)
+            ->withHeader('Content-Type', 'text/html')
+            ->write($e);
+    }
+
+    $isNbSpotLimitedByClub = $data['isNbSpotLimitedByClub'] == 1;
+
+    // Getting information about already registered teams and available spots for the club
+    if ($isNbSpotLimitedByClub) {
+        $availableSpotsQuery = "SELECT
+                                (SELECT COUNT(*)
+                                 FROM Championnat_Equipes
+                                 WHERE idClub = {$registration['clubId']}
+                                 AND idCategorieParSaison = {$registration['categoryBySeasonId']}) AS nbRegisteredTeam,
+                                (SELECT cpc.nbPlaces
+                                 FROM Championnat_Clubs_Places_Categories cpc, Championnat_Categories_Par_Saison cps
+                                 WHERE cpc.idCategorie = cps.categoryId
+                                 AND cpc.idClub = {$registration['clubId']}
+                                 AND cps.id = {$registration['categoryBySeasonId']}) AS nbSpots";
+        try {
+            $result = $this->db->prepare($availableSpotsQuery);
+            $result->execute();
+            $data = $result->fetch(PDO::FETCH_ASSOC);
+        } catch (PDOException $e) {
+            return $response->withStatus(500)
+                ->withHeader('Content-Type', 'text/html')
+                ->write($e);
+        }
+
+        $nbAvailableSpots = $data['nbSpots'] - $data['nbRegisteredTeam'];
+
+        if ($nbAvailableSpots <= 0) {
+            return $response->withStatus(409)
+                            ->withHeader('Content-Type', 'text/plain')
+                            ->withAddedHeader('X-Conflict-Error', 'noSpot')
+                            ->write('There is no more spot available for your team');
+        }
     }
 
     // Saving the team in the database
-    $queryTeam = "INSERT INTO Championnat_Equipes (
-                  equipe,
-                  idClub,
-                  idResponsable,
-                  idCategorieParSaison,
-                  couleurMaillotDomicile,
-                  couleurMaillotExterieur,
-                  idLieuDomicile,
-                  registrationAuthorId,
-                  registrationDate
-              )
-              VALUES (
-                  '{$registration['teamName']}',
-                  {$registration['clubId']},
-                  {$registration['teamManagerId']},
-                  {$registration['categoryBySeasonId']},
-                  '{$registration['jerseyColorHome']}',
-                  '{$registration['jerseyColorAway']}',
-                  {$registration['homeVenueId']},
-                  {$userId},
-                  NOW()
-              )";
+    $teamQuery = "INSERT INTO Championnat_Equipes (
+                      equipe,
+                      idClub,
+                      idResponsable,
+                      idCategorieParSaison,
+                      couleurMaillotDomicile,
+                      couleurMaillotExterieur,
+                      idLieuDomicile,
+                      registrationAuthorId,
+                      registrationDate
+                  )
+                  VALUES (
+                      '{$registration['teamName']}',
+                      {$registration['clubId']},
+                      {$registration['teamManagerId']},
+                      {$registration['categoryBySeasonId']},
+                      '{$registration['jerseyColorHome']}',
+                      '{$registration['jerseyColorAway']}',
+                      {$registration['homeVenueId']},
+                      {$userId},
+                      NOW()
+                  )";
 
     try {
-        $this->db->exec($queryTeam);
+        $this->db->exec($teamQuery);
+        $teamId = $this->db->lastInsertId();
         $newResponse = $response;
     } catch (PDOException $e) {
-        $newResponse = $response->withStatus(500)
-                                ->withHeader('Content-Type', 'text/html')
-                                ->write($e);
-    } finally {
-        return $newResponse;
+        return $response->withStatus(500)
+            ->withHeader('Content-Type', 'text/html')
+            ->write($e);
     }
 
+    // Saving the players in the database
+    $playerQuery = "INSERT INTO Championnat_Joueurs (
+                        teamId,
+                        personId,
+                        registrationAuthorId,
+                        registrationDate
+                    )
+                    VALUES ";
 
+    foreach ($registration['playersId'] as $playerId) {
+        $playerQuery .= "($teamId, $playerId, $userId, NOW()),";
+    }
+    $playerQuery = rtrim($playerQuery, ","); // Removing extra comma
+
+    try {
+        $this->db->exec($playerQuery);
+    } catch (PDOException $e) {
+        return $response->withStatus(500)
+            ->withHeader('Content-Type', 'text/html')
+            ->write($e);
+    }
+
+    return $response;
 });

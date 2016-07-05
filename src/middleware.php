@@ -16,7 +16,6 @@ $app->add(new \Tuupola\Middleware\Cors([
 
 
 // TODO: authentication to specific paths
-// TODO: add the username in the request
 $app->add(new \Slim\Middleware\HttpBasicAuthentication([
     "users" => getUsers($container->get('db')),
     "callback" => function($request, $response, $arguments) use ($container) {
