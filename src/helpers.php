@@ -68,7 +68,7 @@ function createClubArray($club) {
 
 function createChampionshipSpot($club) {
     return array(
-        'categoryId' => intval($club['championshipCategory']),
+        'categoryId' => intval($club['championshipCategoryId']),
         'nbSpots' => intval($club['championshipNbSpots'])
     );
 }
@@ -97,6 +97,10 @@ function getUsers($db) {
     }
     
     return $users;
+}
+
+function getSeasonName($startYear) {
+    return $startYear . ' - ' . ($startYear + 1);
 }
 
 function getUserIdFromUsername($db, $username) {

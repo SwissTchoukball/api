@@ -52,7 +52,7 @@ $app->get('/club/{id}', function(Request $request, Response $response) {
                      p.nom AS presidentLastName, p.prenom AS presidentFirstName,
                      p.adresse AS presidentAddress, p.npa AS presidentPostalCode, p.ville AS presidentCity, p.email AS presidentEmail, p.telPrive AS presidentPhoneNumber, p.portable AS presidentMobileNumber,
                      cl.url, cl.facebookUsername, cl.twitterUsername, cl.flickrUsername, cl.canton AS cantonId, ca.sigle, ca.nomCanton$lang AS cantonName,
-                     ccpc.idCategorie AS championshipCategory, ccpc.nbPlaces AS championshipNbSpots
+                     ccpc.idCategorie AS championshipCategoryId, ccpc.nbPlaces AS championshipNbSpots
               FROM ClubsFstb cl
               LEFT OUTER JOIN DBDPersonne p ON p.idDbdPersonne = cl.idPresident
               LEFT OUTER JOIN Canton ca ON ca.id = cl.canton
@@ -114,8 +114,54 @@ $app->get('/club/{id}/members', function(Request $request, Response $response) {
     $newResponse = $response->withJson($data);
 
     return $newResponse;
+});
 
+/**
+ * GET request for all the team registrations of a specific club
+ */
+$app->get('/club/{id}/teams', function(Request $request, Response $response) {
+    $clubId = $request->getAttribute('id');
+    $lang = getLang($request);
 
+    $query = "SELECT ce.idEquipe AS id,
+                     ce.equipe AS name,
+                     ccps.id AS categoryBySeasonId,
+                     ccps.season,
+                     cc.idCategorie AS categoryId,
+                     cc.categorie$lang AS categoryName,
+                     ce.feePaymentDate
+              FROM Championnat_Equipes ce,
+                   Championnat_Categories_Par_Saison ccps,
+                   Championnat_Categories cc
+              WHERE ce.idCategorieParSaison = ccps.id
+              AND ccps.categoryId = cc.idCategorie
+              AND ce.idClub = :clubId
+              ORDER BY registrationDate DESC";
+
+    $result = $this->db->prepare($query);
+    $result->execute(array(':clubId' => $clubId));
+
+    $data = array();
+    while ($team = $result->fetch(PDO::FETCH_ASSOC)) {
+        array_push($data, array(
+            'id' => intval($team['id']),
+            'name' => $team['name'],
+            'categoryBySeasonId' => intval($team['categoryBySeasonId']),
+            'season' => array(
+                'startYear' => intval($team['season']),
+                'name' => getSeasonName($team['season'])
+            ),
+            'category' => array(
+                'id' => intval($team['categoryId']),
+                'name' => $team['categoryName']
+            ),
+            'feePaymentDate' => $team['feePaymentDate'] 
+        ));
+    }
+
+    $newResponse = $response->withJson($data);
+
+    return $newResponse;
 });
 
 /**
@@ -129,6 +175,7 @@ $app->get('/championship/categories-by-season', function(Request $request, Respo
                      ccps.season,
                      cc.idCategorie AS categoryId,
                      cc.categorie$lang AS categoryName,
+                     cc.isNbSpotLimitedByClub,
                      ccps.teamRegistrationFee,
                      ccps.playerLicenseFee,
                      ccps.refereeDefrayalAmount,
@@ -150,10 +197,14 @@ $app->get('/championship/categories-by-season', function(Request $request, Respo
     while ($registration = $result->fetch(PDO::FETCH_ASSOC)) {
         array_push($data, array(
             'id' => intval($registration['id']),
-            'season' => intval($registration['season']),
+            'season' => array(
+                'startYear' => intval($registration['season']),
+                'name' => getSeasonName($registration['season'])
+            ),
             'category' => array(
                 'id' => intval($registration['categoryId']),
-                'name' => $registration['categoryName']
+                'name' => $registration['categoryName'],
+                'isNbSpotLimitedByClub' => $registration['isNbSpotLimitedByClub'] == 1
             ),
             'teamRegistrationFee' => intval($registration['teamRegistrationFee']),
             'playerLicenseFee' => intval($registration['playerLicenseFee']),
