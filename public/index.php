@@ -26,6 +26,11 @@ require __DIR__ . '/../src/helpers.php';
 // Register middleware
 require __DIR__ . '/../src/middleware.php';
 
+// Register controllers
+require __DIR__ . '/../src/controllers/ClubsController.php';
+require __DIR__ . '/../src/controllers/VenuesController.php';
+require __DIR__ . '/../src/controllers/ChampionshipController.php';
+
 // Register routes
 require __DIR__ . '/../src/routes.php';
 
