@@ -15,6 +15,7 @@ class Championship {
     public function __construct(ContainerInterface $ci) {
         $this->ci = $ci;
         $this->db = $ci['db'];
+        $this->user = $ci['user'];
     }
 
     /**
@@ -75,7 +76,7 @@ class Championship {
         return $newResponse;
     }
 
-    private function _registerPlayers(Array $playersId, $teamId, $userId) {
+    private function _registerPlayers(Array $playersId, $teamId) {
 
         // Saving the players in the database
         $playerQuery = "INSERT INTO Championnat_Joueurs (
@@ -87,7 +88,7 @@ class Championship {
                     VALUES ";
 
         foreach ($playersId as $playerId) {
-            $playerQuery .= "($teamId, $playerId, $userId, NOW()),";
+            $playerQuery .= "($teamId, $playerId, $this->user['id'], NOW()),";
         }
         $playerQuery = rtrim($playerQuery, ","); // Removing extra comma
 
@@ -109,15 +110,6 @@ class Championship {
      */
     public function registerTeam(Request $request, Response $response) {
         $registration = $request->getParsedBody();
-
-        // Getting the user ID of the person who filled the form
-        try {
-            $userId = getUserIdFromUsername($this->db, $_SESSION['__username__']);
-        } catch (PDOException $e) {
-            return $response->withStatus(500)
-                ->withHeader('Content-Type', 'text/html')
-                ->write($e);
-        }
 
         // Getting information regarding if a club can only register a limited number of team in a category
         $spotLimitationQuery = "SELECT c.isNbSpotLimitedByClub
@@ -188,7 +180,7 @@ class Championship {
                       '{$registration['jerseyColorHome']}',
                       '{$registration['jerseyColorAway']}',
                       {$registration['homeVenueId']},
-                      {$userId},
+                      {$this->user['id']},
                       NOW()
                   )";
 
@@ -203,7 +195,7 @@ class Championship {
         }
         
         try {
-            $this->_registerPlayers($registration['playersId'], $teamId, $userId);
+            $this->_registerPlayers($registration['playersId'], $teamId);
         } catch(PDOException $e) {
             return $response->withStatus(500)
                 ->withHeader('Content-Type', 'text/html')
@@ -225,17 +217,8 @@ class Championship {
     public function registerPlayers(Request $request, Response $response) {
         $registration = $request->getParsedBody();
 
-        // Getting the user ID of the person who filled the form
         try {
-            $userId = getUserIdFromUsername($this->db, $_SESSION['__username__']);
-        } catch (PDOException $e) {
-            return $response->withStatus(500)
-                ->withHeader('Content-Type', 'text/html')
-                ->write($e);
-        }
-
-        try {
-            $this->_registerPlayers($registration['playersId'], $registration['teamId'], $userId);
+            $this->_registerPlayers($registration['playersId'], $registration['teamId']);
         } catch(PDOException $e) {
             return $response->withStatus(500)
                 ->withHeader('Content-Type', 'text/html')

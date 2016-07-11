@@ -99,20 +99,46 @@ function getUsers($db) {
     return $users;
 }
 
-function getSeasonName($startYear) {
-    return $startYear . ' - ' . ($startYear + 1);
-}
-
-function getUserIdFromUsername($db, $username) {
-    $query = "SELECT id FROM Personne WHERE username = '" . $username . "'";
-    $result = $db->prepare($query);
-    $result->execute();
-
+function getUserByUsername($db, $username) {
+    $userQuery = "SELECT p.id, p.username, p.idClub AS clubId, CONCAT(p.prenom, ' ', p.nom) AS fullName
+              FROM Personne p
+              WHERE p.username = '$username'";
     try {
-        $user = $result->fetch(PDO::FETCH_ASSOC);
+        $userResult = $db->prepare($userQuery);
+        $userResult->execute();
     } catch (PDOException $e) {
         throw $e;
     }
 
-    return $user['id'];
+    $user = $userResult->fetch(PDO::FETCH_ASSOC);
+
+    $rightsQuery = "SELECT ass.name AS asset, MAX(ri.read) AS `read`, MAX(ri.write) AS `write`
+                    FROM acm_rights ri, acm_roles ro, acm_assets ass, acm_distribution dis
+                    WHERE dis.user_id = {$user['id']}
+                    AND dis.role_id = ri.role_id
+                    AND ri.asset_id = ass.id
+                    GROUP BY asset";
+    try {
+        $rightsResult = $db->prepare($rightsQuery);
+        $rightsResult->execute();
+    } catch (PDOException $e) {
+        throw $e;
+    }
+
+    $user['rights'] = array();
+    while ($right = $rightsResult->fetch(PDO::FETCH_ASSOC)) {
+        $user['rights'][$right['asset']]['read'] = $right['read'] == 1;
+        $user['rights'][$right['asset']]['write'] = $right['write'] == 1;
+    }
+
+    return $user;
+    
+}
+
+function getSeasonName($startYear) {
+    return $startYear . ' - ' . ($startYear + 1);
+}
+
+function hasClubMembersReadAccess($user, $clubId) {
+    return $clubId == $user['clubId'] && $user['rights']['clubMembers']['read'];
 }
