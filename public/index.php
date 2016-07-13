@@ -11,6 +11,17 @@ if (PHP_SAPI == 'cli-server') {
 
 require __DIR__ . '/../vendor/autoload.php';
 
+// helpers methods
+require __DIR__ . '/../src/helpers.php';
+
+// Controllers
+require __DIR__ . '/../src/controllers/ClubsController.php';
+require __DIR__ . '/../src/controllers/VenuesController.php';
+require __DIR__ . '/../src/controllers/ChampionshipController.php';
+
+// Middleware classes
+require __DIR__ . '/../src/middleware/Authorization.php';
+
 session_start();
 
 // Instantiate the app
@@ -20,16 +31,8 @@ $app = new \Slim\App($settings);
 // Set up dependencies
 require __DIR__ . '/../src/dependencies.php';
 
-// Register helpers
-require __DIR__ . '/../src/helpers.php';
-
 // Register middleware
 require __DIR__ . '/../src/middleware.php';
-
-// Register controllers
-require __DIR__ . '/../src/controllers/ClubsController.php';
-require __DIR__ . '/../src/controllers/VenuesController.php';
-require __DIR__ . '/../src/controllers/ChampionshipController.php';
 
 // Register routes
 require __DIR__ . '/../src/routes.php';

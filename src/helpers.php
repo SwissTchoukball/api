@@ -139,6 +139,21 @@ function getSeasonName($startYear) {
     return $startYear . ' - ' . ($startYear + 1);
 }
 
+// TODO: in the functions below with $clubId as parameter, the $clubId validity should be checked in the club controller
+// Or not... could be nice that all the 403 errors are coming from Authorization middleware
+// Then it makes me wonder if the team and player registration should not be under /club
+function hasClubReadAccess($user, $clubId) {
+    return $clubId == $user['clubId'] && $user['rights']['club']['read'];
+}
+
 function hasClubMembersReadAccess($user, $clubId) {
     return $clubId == $user['clubId'] && $user['rights']['clubMembers']['read'];
+}
+
+function hasClubTeamsReadAccess($user, $clubId) {
+    return $clubId == $user['clubId'] && $user['rights']['clubTeams']['read'];
+}
+
+function hasClubTeamsWriteAccess($user) {
+    return $user['rights']['clubTeams']['write'];
 }

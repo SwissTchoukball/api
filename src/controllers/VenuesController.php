@@ -1,12 +1,13 @@
 <?php
-use \Psr\Http\Message\ServerRequestInterface as Request;
-use \Psr\Http\Message\ResponseInterface as Response;
-use Interop\Container\ContainerInterface as ContainerInterface;
 
-/**
+/*
  * @copyright   Swiss Tchoukball 2016
  * @author      David Sandoz <david.sandoz@tchoukball.ch>
  */
+
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+use Interop\Container\ContainerInterface as ContainerInterface;
 
 class Venues {
     protected $ci;

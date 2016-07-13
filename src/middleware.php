@@ -5,39 +5,18 @@
 
 // e.g: $app->add(new \Slim\Csrf\Guard);
 
+use \Psr\Http\Message\ServerRequestInterface as Request;
+use \Psr\Http\Message\ResponseInterface as Response;
+
 $container = $app->getContainer();
 
 // Authorization
-$app->add(function($request, $response, $next) use ($container) {
-    $path = explode('/', $request->getUri()->getPath());
-    $method = $request->getMethod();
-    if ($path[1] == 'club' && $method == 'GET') {
-        // Authorization to read a specific club data
-        if (isset($request->getAttribute('routeInfo')[2]['clubId'])) {
-            $clubId = $request->getAttribute('routeInfo')[2]['clubId'];
-
-            $hasClubReadAccess = hasClubMembersReadAccess($container['user'], $clubId);
-            // TODO: Implement hasClubTeamsReadAccess and check too in here for the correct path
-
-            if ($hasClubReadAccess) {
-                $response = $next($request, $response);
-            } else {
-                $response = $response->withStatus(403);
-            }
-        } else {
-            // If no clubId is given
-            $response = $response->withStatus(400);
-        }
-    } else {
-        $response = $next($request, $response);
-    }
-    return $response;
-});
+$app->add('SwissTchoukball\Middleware\Authorization');
 
 // Authentication (for now, need to be authenticated for any path)
 $app->add(new \Slim\Middleware\HttpBasicAuthentication([
     "users" => getUsers($container->get('db')),
-    "callback" => function($request, $response, $arguments) use ($container) {
+    "callback" => function(Request $request, Response $response, $arguments) use ($container) {
         try {
             $container['user'] = getUserByUsername($container->get('db'), $arguments['user']);
         } catch (PDOException $e) {
