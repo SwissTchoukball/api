@@ -102,7 +102,6 @@ class Championship {
 
     /**
      * Register a new team
-     * TODO: input validation
      * TODO: send mail to heads of championship and finance
      * 
      * @param Request $request
@@ -111,12 +110,14 @@ class Championship {
      */
     public function registerTeam(Request $request, Response $response) {
         $registration = $request->getParsedBody();
+        $clubId = $registration['clubId'];
+        $categoryBySeasonId = $registration['categoryBySeasonId'];
 
         // Getting information regarding if a club can only register a limited number of team in a category
         $spotLimitationQuery = "SELECT c.isNbSpotLimitedByClub
                             FROM Championnat_Categories c, Championnat_Categories_Par_Saison cps
                             WHERE c.idCategorie = cps.categoryId
-                            AND cps.id = {$registration['categoryBySeasonId']}";
+                            AND cps.id = {$categoryBySeasonId}";
         try {
             $result = $this->db->prepare($spotLimitationQuery);
             $result->execute();
@@ -134,13 +135,13 @@ class Championship {
             $availableSpotsQuery = "SELECT
                                 (SELECT COUNT(*)
                                  FROM Championnat_Equipes
-                                 WHERE idClub = {$registration['clubId']}
-                                 AND idCategorieParSaison = {$registration['categoryBySeasonId']}) AS nbRegisteredTeam,
+                                 WHERE idClub = {$clubId}
+                                 AND idCategorieParSaison = {$categoryBySeasonId}) AS nbRegisteredTeam,
                                 (SELECT cpc.nbPlaces
                                  FROM Championnat_Clubs_Places_Categories cpc, Championnat_Categories_Par_Saison cps
                                  WHERE cpc.idCategorie = cps.categoryId
-                                 AND cpc.idClub = {$registration['clubId']}
-                                 AND cps.id = {$registration['categoryBySeasonId']}) AS nbSpots";
+                                 AND cpc.idClub = {$clubId}
+                                 AND cps.id = {$categoryBySeasonId}) AS nbSpots";
             try {
                 $result = $this->db->prepare($availableSpotsQuery);
                 $result->execute();
@@ -208,7 +209,6 @@ class Championship {
 
     /**
      * Register players in a team
-     * TODO: input validation
      * TODO: send mail to heads of championship and finance
      * 
      * @param Request $request
@@ -217,9 +217,11 @@ class Championship {
      */
     public function registerPlayers(Request $request, Response $response) {
         $registration = $request->getParsedBody();
+        $playersId = $registration['playersId'];
+        $teamId = $registration['teamId'];
 
         try {
-            $this->_registerPlayers($registration['playersId'], $registration['teamId']);
+            $this->_registerPlayers($playersId, $teamId);
         } catch(PDOException $e) {
             return $response->withStatus(500)
                 ->withHeader('Content-Type', 'text/html')
