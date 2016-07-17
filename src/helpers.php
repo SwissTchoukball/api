@@ -1,77 +1,10 @@
 <?php
-
-// TODO distribute helpers method in different files
-
-function createClubArray($club) {
-    // Defining postal address
-    $address = array();
-    if (strlen($club["clubPostalCode"]) == 4 && strlen($club["clubCity"]) >= 3) {
-        $address['firstLine'] = $club["clubAddress"];
-        $address['postalCode'] = intval($club["clubPostalCode"]);
-        $address['city'] = $club["clubCity"];
-    } else {
-        $address['firstLine'] = stripslashes($club["presidentFirstName"]) . " " . stripslashes($club["presidentLastName"]);
-        $address['secondLine'] = $club["presidentAddress"];
-        $address['postalCode'] = intval($club["presidentPostalCode"]);
-        $address['city'] = $club["presidentCity"];
-    }
-
-    // Defining email address
-    if ($club['clubEmail'] != "") {
-        $email = $club["clubEmail"];
-    } else if ($club["presidentEmail"] != "") {
-        $email = $club["presidentEmail"];
-    } else {
-        $email = '';
-    }
-
-    // Defining phone number
-    if ($club['clubPhoneNumber'] != "") {
-        $phoneNumber = $club['clubPhoneNumber'];
-        $mobileNumber = '';
-    } else {
-        if ($club["presidentPhoneNumber"] != "") {
-            $phoneNumber = $club['presidentPhoneNumber'];
-        } else {
-            $phoneNumber = '';
-        }
-        if ($club["presidentMobileNumber"] != "") {
-            $mobileNumber = $club['presidentMobileNumber'];
-        } else {
-            $mobileNumber = '';
-        }
-    }
-
-    return array(
-        'id' => intval($club['id']),
-        'nbIdClub' => intval($club['nbIdClub']),
-        'name' => $club['name'],
-        'fullName' => $club['fullName'],
-        'sortingName' => $club['sortingName'],
-        'canton' => array(
-            'id' => intval($club['cantonId']),
-            'acronym' => $club['sigle'],
-            'name' => $club['cantonName']
-        ),
-        'address' => $address,
-        'email' => $email,
-        'phoneNumber' => $phoneNumber,
-        'mobileNumber' => $mobileNumber,
-        'url' => $club['url'],
-        'usernames' => array(
-            'facebook' => $club['facebookUsername'],
-            'twitter' => $club['twitterUsername'],
-            'flickr' => $club['flickrUsername'],
-        )
-    );
-}
-
-function createChampionshipSpot($club) {
-    return array(
-        'categoryId' => intval($club['championshipCategoryId']),
-        'nbSpots' => intval($club['championshipNbSpots'])
-    );
-}
+/**
+ * @copyright   Swiss Tchoukball 2016
+ * @author      David Sandoz <david.sandoz@tchoukball.ch>
+ *
+ * TODO: distribute helpers method in different files
+ */
 
 function getLang($request) {
     $lang = 'Fr';
@@ -139,9 +72,6 @@ function getSeasonName($startYear) {
     return $startYear . ' - ' . ($startYear + 1);
 }
 
-// TODO: in the functions below with $clubId as parameter, the $clubId validity should be checked in the club controller
-// Or not... could be nice that all the 403 errors are coming from Authorization middleware
-// Then it makes me wonder if the team and player registration should not be under /club
 function hasClubReadAccess($user, $clubId) {
     return $clubId == $user['clubId'] &&
     isset($user['rights']['club']) &&
@@ -182,4 +112,8 @@ function hasFinancesReadAccess($user) {
 
 function hasChampionshipReadAccess($user) {
     return isset($user['rights']['championship']) && $user['rights']['championship']['read'];
+}
+
+function hasChampionshipWriteAccess($user) {
+    return isset($user['rights']['championship']) && $user['rights']['championship']['write'];
 }

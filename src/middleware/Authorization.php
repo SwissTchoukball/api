@@ -61,7 +61,8 @@ class Authorization {
             }
         }
         else if ($path[1] == 'championship' && $method == 'GET') {
-            if (!hasTeamsReadAccess($this->user)) {
+            if (!hasTeamsReadAccess($this->user) &&
+                !hasChampionshipReadAccess($this->user)) {
                 return $response->withStatus(403);
             }
 
@@ -69,7 +70,8 @@ class Authorization {
         }
         else if ($path[1] == 'championship' && $method == 'POST') {
             $registration = $request->getParsedBody();
-            if (!hasClubTeamsWriteAccess($this->user, $registration['clubId'])) {
+            if (!hasClubTeamsWriteAccess($this->user, $registration['clubId']) &&
+                !hasChampionshipWriteAccess($this->user)) {
                 return $response->withStatus(403);
             }
 

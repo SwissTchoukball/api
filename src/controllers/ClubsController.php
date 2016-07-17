@@ -42,7 +42,7 @@ class Clubs {
 
         $data = array();
         while ($club = $result->fetch(PDO::FETCH_ASSOC)) {
-            array_push($data, createClubArray($club));
+            array_push($data, $this->_createClubArray($club));
         }
 
         $newResponse = $response->withJson($data);
@@ -77,17 +77,17 @@ class Clubs {
         $result->execute(array(':clubId' => $clubId));
         $club = $result->fetch(PDO::FETCH_ASSOC);
 
-        $data = createClubArray($club);
+        $data = $this->_createClubArray($club);
 
         $data['actif'] = $club['actif'] == 1;
 
         //TODO: It might be better to have a separate query in here to get the championshipSpots.
         $data['championshipSpots'] = array();
-        array_push($data['championshipSpots'], createChampionshipSpot($club));
+        array_push($data['championshipSpots'], $this->_createChampionshipSpot($club));
 
         // If they have spots in other categories, there will be more rows
         while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
-            array_push($data['championshipSpots'], createChampionshipSpot($row));
+            array_push($data['championshipSpots'], $this->_createChampionshipSpot($row));
         }
 
         $newResponse = $response->withJson($data);
@@ -112,6 +112,7 @@ class Clubs {
                     p.prenom AS firstName,
                     CONCAT(p.prenom, ' ', p.nom) AS fullName,
                     p.email,
+                    p.emailFSTB,
                     p.telPrive AS phoneNumber,
                     p.portable AS mobileNumber
              FROM DBDPersonne p, ClubsFstb c
@@ -193,5 +194,76 @@ class Clubs {
         $newResponse = $response->withJson($data);
 
         return $newResponse;
+    }
+
+    private function _createClubArray($club) {
+        // Defining postal address
+        $address = array();
+        if (strlen($club["clubPostalCode"]) == 4 && strlen($club["clubCity"]) >= 3) {
+            $address['firstLine'] = $club["clubAddress"];
+            $address['postalCode'] = intval($club["clubPostalCode"]);
+            $address['city'] = $club["clubCity"];
+        } else {
+            $address['firstLine'] = stripslashes($club["presidentFirstName"]) . " " . stripslashes($club["presidentLastName"]);
+            $address['secondLine'] = $club["presidentAddress"];
+            $address['postalCode'] = intval($club["presidentPostalCode"]);
+            $address['city'] = $club["presidentCity"];
+        }
+
+        // Defining email address
+        if ($club['clubEmail'] != "") {
+            $email = $club["clubEmail"];
+        } else if ($club["presidentEmail"] != "") {
+            $email = $club["presidentEmail"];
+        } else {
+            $email = '';
+        }
+
+        // Defining phone number
+        if ($club['clubPhoneNumber'] != "") {
+            $phoneNumber = $club['clubPhoneNumber'];
+            $mobileNumber = '';
+        } else {
+            if ($club["presidentPhoneNumber"] != "") {
+                $phoneNumber = $club['presidentPhoneNumber'];
+            } else {
+                $phoneNumber = '';
+            }
+            if ($club["presidentMobileNumber"] != "") {
+                $mobileNumber = $club['presidentMobileNumber'];
+            } else {
+                $mobileNumber = '';
+            }
+        }
+
+        return array(
+            'id' => intval($club['id']),
+            'nbIdClub' => intval($club['nbIdClub']),
+            'name' => $club['name'],
+            'fullName' => $club['fullName'],
+            'sortingName' => $club['sortingName'],
+            'canton' => array(
+                'id' => intval($club['cantonId']),
+                'acronym' => $club['sigle'],
+                'name' => $club['cantonName']
+            ),
+            'address' => $address,
+            'email' => $email,
+            'phoneNumber' => $phoneNumber,
+            'mobileNumber' => $mobileNumber,
+            'url' => $club['url'],
+            'usernames' => array(
+                'facebook' => $club['facebookUsername'],
+                'twitter' => $club['twitterUsername'],
+                'flickr' => $club['flickrUsername'],
+            )
+        );
+    }
+
+    private function _createChampionshipSpot($club) {
+        return array(
+            'categoryId' => intval($club['championshipCategoryId']),
+            'nbSpots' => intval($club['championshipNbSpots'])
+        );
     }
 }

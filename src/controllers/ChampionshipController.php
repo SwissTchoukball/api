@@ -22,8 +22,7 @@ class Championship {
     }
 
     /**
-     * Get the list of open categories by season
-     * TODO: make it possible to get the closed categories by season with a parameter in the request
+     * Get the list of categories by season
      *
      * @param Request $request
      * @param Response $response
@@ -31,6 +30,7 @@ class Championship {
      */
     public function getCategoriesBySeason(Request $request, Response $response) {
         $lang = getLang($request);
+        $params = $request->getQueryParams();
 
         $query = "SELECT ccps.id,
                      ccps.season,
@@ -40,10 +40,14 @@ class Championship {
                      ccps.teamRegistrationFee,
                      ccps.playerLicenseFee,
                      ccps.refereeDefrayalAmount,
-                     DATE_FORMAT(ccps.deadline, '%Y-%m-%dT%H:%i:%sZ') AS deadline
+                     DATE_FORMAT(ccps.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
+                     DATE_FORMAT(ccps.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline
               FROM Championnat_Categories_Par_Saison ccps, Championnat_Categories cc
-              WHERE TIMESTAMP(ccps.deadline) > NOW()
-              AND ccps.categoryId = cc.idCategorie";
+              WHERE ccps.categoryId = cc.idCategorie";
+
+        if (isset($params['status']) && $params['status'] == 'open') {
+            $query .= " AND TIMESTAMP(ccps.registrationDeadline) > NOW()";
+        }
 
         try {
             $result = $this->db->prepare($query);
@@ -70,7 +74,8 @@ class Championship {
                 'teamRegistrationFee' => intval($registration['teamRegistrationFee']),
                 'playerLicenseFee' => intval($registration['playerLicenseFee']),
                 'refereeDefrayalAmount' => intval($registration['refereeDefrayalAmount']),
-                'deadline' => $registration['deadline']
+                'registrationDeadline' => $registration['registrationDeadline'],
+                'paymentDeadline' => $registration['paymentDeadline']
             ));
         }
 
@@ -98,7 +103,7 @@ class Championship {
               WHERE ce.idCategorieParSaison = ccps.id
               AND ccps.categoryId = cc.idCategorie
               AND ce.idClub = cl.id
-              ORDER BY season DESC, categoryId, clubName, name";
+              ORDER BY season DESC, categoryId, cl.nomPourTri, name";
 
         try {
             $result = $this->db->prepare($query);
@@ -155,6 +160,10 @@ class Championship {
                      cl.id AS clubId,
                      cl.club AS clubName,
                      ccps.id AS categoryBySeasonId,
+                     ccps.teamRegistrationFee,
+                     ccps.playerLicenseFee,
+                     DATE_FORMAT(ccps.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
+                     DATE_FORMAT(ccps.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline,
                      ccps.season,
                      cc.idCategorie AS categoryId,
                      cc.categorie$lang AS categoryName,
@@ -205,8 +214,7 @@ class Championship {
             $returnedPlayer = array(
                 'id' => intval($player['id']),
                 'lastName' => $player['lastName'],
-                'firstName' => $player['firstName'],
-                'licensePaymentDate' => $player['licensePaymentDate']
+                'firstName' => $player['firstName']
             );
 
             if (hasClubFinancesReadAccess($this->user, $team['clubId']) ||
@@ -228,7 +236,13 @@ class Championship {
                 'id' => intval($team['clubId']),
                 'name' => $team['clubName']
             ),
-            'categoryBySeasonId' => intval($team['categoryBySeasonId']),
+            'categoryBySeason' => array(
+                'id' => intval($team['categoryBySeasonId']),
+                'registrationDeadline' => $team['registrationDeadline'],
+                'paymentDeadline' => $team['paymentDeadline'],
+                'teamRegistrationFee' => intval($team['teamRegistrationFee']),
+                'playerLicenseFee' => intval($team['playerLicenseFee']),
+            ),
             'season' => array(
                 'startYear' => intval($team['season']),
                 'name' => getSeasonName($team['season'])
@@ -289,7 +303,6 @@ class Championship {
 
     /**
      * Register a new team
-     * TODO: send mail to heads of championship and finance
      * 
      * @param Request $request
      * @param Response $response
@@ -299,6 +312,12 @@ class Championship {
         $registration = $request->getParsedBody();
         $clubId = $registration['clubId'];
         $categoryBySeasonId = $registration['categoryBySeasonId'];
+        $teamName = $registration['teamName'];
+        $teamManagerId = $registration['teamManagerId'];
+        $jerseyColorHome = $registration['jerseyColorHome'];
+        $jerseyColorAway = $registration['jerseyColorAway'];
+        $homeVenueId = $registration['homeVenueId'];
+        $playersId = $registration['playersId'];
 
         // Getting information regarding if a club can only register a limited number of team in a category
         $spotLimitationQuery = "SELECT c.isNbSpotLimitedByClub
@@ -362,13 +381,13 @@ class Championship {
                       registrationDate
                   )
                   VALUES (
-                      '{$registration['teamName']}',
-                      {$registration['clubId']},
-                      {$registration['teamManagerId']},
-                      {$registration['categoryBySeasonId']},
-                      '{$registration['jerseyColorHome']}',
-                      '{$registration['jerseyColorAway']}',
-                      {$registration['homeVenueId']},
+                      '{$teamName}',
+                      {$clubId},
+                      {$teamManagerId},
+                      {$categoryBySeasonId},
+                      '{$jerseyColorHome}',
+                      '{$jerseyColorAway}',
+                      {$homeVenueId},
                       {$this->user['id']},
                       NOW()
                   )";
@@ -384,7 +403,7 @@ class Championship {
         }
         
         try {
-            $this->_registerPlayers($registration['playersId'], $teamId);
+            $this->_registerPlayers($playersId, $teamId);
         } catch(PDOException $e) {
             return $response->withStatus(500)
                 ->withHeader('Content-Type', 'text/html')
@@ -396,7 +415,7 @@ class Championship {
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
         $this->mailer->Subject = 'Ajout d\'une équipe';
         // TODO: Give more informations
-        $this->mailer->Body = 'Une équipe de ' . count($registration['playersId']) . ' joueurs a été ajoutée';
+        $this->mailer->Body = 'Une équipe de ' . count($playersId) . ' joueurs a été ajoutée';
 
         if(!$this->mailer->send()) {
             //TODO: Define where we can log that.
@@ -432,9 +451,9 @@ class Championship {
         // Informing the head of finance and head of championship.
         $this->mailer->addAddress($this->emailAddresses['headOfChampionship']);
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
-        $this->mailer->Subject = 'Ajout d\'un joueur';
+        $this->mailer->Subject = 'Ajout de ' . count($playersId) . ' joueur(s)';
         // TODO: Give more informations
-        $this->mailer->Body = 'Joueur ajouté';
+        $this->mailer->Body = 'Joueur(s) ajouté(s)';
 
         if(!$this->mailer->send()) {
             //TODO: Define where we can log that.
