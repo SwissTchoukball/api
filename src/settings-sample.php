@@ -20,6 +20,19 @@ return [
             'user' => '',
             'pass' => '',
             'dbname' => ''
+        ],
+        'smtp' => [
+            'host' => '',
+            'auth' => false,
+            'username' => '',
+            'password' => '',
+            'port' => '',
+            'secure' => '' // ssl or tls
+        ],
+        'emailAddresses' => [
+            'developers' => '',
+            'headOfChampionship' => '',
+            'headOfFinances' => ''
         ]
     ],
 ];

@@ -42,7 +42,7 @@ class Authorization {
 
                     $response = $next($request, $response);
                 }
-                else if ($path[3] == 'team' || $path[3] == 'teams') {
+                else if ($path[3] == 'teams') {
                     if (!hasClubTeamsReadAccess($this->user, $clubId)) {
                         return $response->withStatus(403);
                     }
@@ -60,8 +60,16 @@ class Authorization {
                 $response = $response->withStatus(400);
             }
         }
+        else if ($path[1] == 'championship' && $method == 'GET') {
+            if (!hasTeamsReadAccess($this->user)) {
+                return $response->withStatus(403);
+            }
+
+            $response = $next($request, $response);
+        }
         else if ($path[1] == 'championship' && $method == 'POST') {
-            if (!hasClubTeamsWriteAccess($this->user)) {
+            $registration = $request->getParsedBody();
+            if (!hasClubTeamsWriteAccess($this->user, $registration['clubId'])) {
                 return $response->withStatus(403);
             }
 

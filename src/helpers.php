@@ -143,17 +143,43 @@ function getSeasonName($startYear) {
 // Or not... could be nice that all the 403 errors are coming from Authorization middleware
 // Then it makes me wonder if the team and player registration should not be under /club
 function hasClubReadAccess($user, $clubId) {
-    return $clubId == $user['clubId'] && $user['rights']['club']['read'];
+    return $clubId == $user['clubId'] &&
+    isset($user['rights']['club']) &&
+    $user['rights']['club']['read'];
 }
 
 function hasClubMembersReadAccess($user, $clubId) {
-    return $clubId == $user['clubId'] && $user['rights']['clubMembers']['read'];
+    return $clubId == $user['clubId'] &&
+    isset($user['rights']['clubMembers']) &&
+    $user['rights']['clubMembers']['read'];
+}
+
+function hasClubFinancesReadAccess($user, $clubId) {
+    return $clubId == $user['clubId'] &&
+    isset($user['rights']['clubFinances']) &&
+    $user['rights']['clubFinances']['read'];
 }
 
 function hasClubTeamsReadAccess($user, $clubId) {
-    return $clubId == $user['clubId'] && $user['rights']['clubTeams']['read'];
+    return $clubId == $user['clubId'] &&
+    isset($user['rights']['clubTeams']) &&
+    $user['rights']['clubTeams']['read'];
 }
 
-function hasClubTeamsWriteAccess($user) {
-    return $user['rights']['clubTeams']['write'];
+function hasClubTeamsWriteAccess($user, $clubId) {
+    return $clubId == $user['clubId'] &&
+    isset($user['rights']['clubTeams']) &&
+    $user['rights']['clubTeams']['write'];
+}
+
+function hasTeamsReadAccess($user) {
+    return isset($user['rights']['teams']) && $user['rights']['teams']['read'];
+}
+
+function hasFinancesReadAccess($user) {
+    return isset($user['rights']['finances']) && $user['rights']['finances']['read'];
+}
+
+function hasChampionshipReadAccess($user) {
+    return isset($user['rights']['championship']) && $user['rights']['championship']['read'];
 }

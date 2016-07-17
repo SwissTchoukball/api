@@ -17,6 +17,7 @@
         "slim/php-view": "^2.0",
         "monolog/monolog": "^1.17",
         "tuupola/cors-middleware": "0.5.1",
-        "tuupola/slim-basic-auth": "2.0.2"
+        "tuupola/slim-basic-auth": "2.0.2",
+        "phpmailer/phpmailer": "5.2.16"
     }
 }

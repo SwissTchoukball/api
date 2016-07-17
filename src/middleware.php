@@ -25,6 +25,12 @@ $app->add(new \Slim\Middleware\HttpBasicAuthentication([
                 ->write($e);
         }
         return $response;
+    },
+    "error" => function (Request $request, Response $response, $arguments) {
+        $data = [];
+        $data["status"] = "error";
+        $data["message"] = $arguments["message"];
+        return $response->write(json_encode($data, JSON_UNESCAPED_SLASHES));
     }
 ]));
 
@@ -32,7 +38,7 @@ $app->add(new \Slim\Middleware\HttpBasicAuthentication([
 $app->add(new \Tuupola\Middleware\Cors([
     'origin' => ['http://localhost:8081', 'https://tchoukball.ch', 'https//www.tchoukball.ch'],
     'methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    'headers.allow' => ['Content-Type', 'X-Requested-With', 'Authorization', 'Accept-Language', 'Accept'],
+    'headers.allow' => ['Content-Type', 'X-Requested-With', 'Origin', 'Authorization', 'Accept-Language', 'Accept'],
     'headers.expose' => [],
     'credentials' => false,
     'cache' => 0,
