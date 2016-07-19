@@ -148,19 +148,19 @@ class Clubs {
 
         $query = "SELECT ce.idEquipe AS id,
                      ce.equipe AS name,
-                     ccps.id AS categoryBySeasonId,
-                     ccps.season,
+                     ced.id AS editionId,
+                     ced.season,
                      cc.idCategorie AS categoryId,
                      cc.categorie$lang AS categoryName,
                      cl.id AS clubId,
                      cl.club AS clubName,
                      ce.feePaymentDate
               FROM Championnat_Equipes ce,
-                   Championnat_Categories_Par_Saison ccps,
+                   Championnat_Editions ced,
                    Championnat_Categories cc,
                    ClubsFstb cl
-              WHERE ce.idCategorieParSaison = ccps.id
-              AND ccps.categoryId = cc.idCategorie
+              WHERE ce.idEdition = ced.id
+              AND ced.categoryId = cc.idCategorie
               AND ce.idClub = cl.id
               AND cl.id = :clubId
               ORDER BY registrationDate DESC";
@@ -178,7 +178,7 @@ class Clubs {
                     'id' => intval($team['clubId']),
                     'name' => $team['clubName']
                 ),
-                'categoryBySeasonId' => intval($team['categoryBySeasonId']),
+                'editionId' => intval($team['editionId']),
                 'season' => array(
                     'startYear' => intval($team['season']),
                     'name' => getSeasonName($team['season'])

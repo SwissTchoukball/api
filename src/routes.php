@@ -13,7 +13,7 @@ $app->get('/clubs', '\Clubs:getClubs');
 $app->get('/club/{clubId}', '\Clubs:getClub');
 $app->get('/club/{clubId}/members', '\Clubs:getMembers');
 $app->get('/club/{clubId}/teams', '\Clubs:getTeams');
-$app->get('/championship/categories-by-season', '\Championship:getCategoriesBySeason');
+$app->get('/championship/editions', '\Championship:getEditions');
 $app->get('/championship/team/{teamId}', '\Championship:getTeam');
 $app->get('/championship/teams', '\Championship:getTeams');
 $app->get('/venues', '\Venues:getVenues');

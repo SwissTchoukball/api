@@ -28,25 +28,25 @@ class Championship {
      * @param Response $response
      * @return Response
      */
-    public function getCategoriesBySeason(Request $request, Response $response) {
+    public function getEditions(Request $request, Response $response) {
         $lang = getLang($request);
         $params = $request->getQueryParams();
 
-        $query = "SELECT ccps.id,
-                     ccps.season,
+        $query = "SELECT ced.id,
+                     ced.season,
                      cc.idCategorie AS categoryId,
                      cc.categorie$lang AS categoryName,
                      cc.isNbSpotLimitedByClub,
-                     ccps.teamRegistrationFee,
-                     ccps.playerLicenseFee,
-                     ccps.refereeDefrayalAmount,
-                     DATE_FORMAT(ccps.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
-                     DATE_FORMAT(ccps.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline
-              FROM Championnat_Categories_Par_Saison ccps, Championnat_Categories cc
-              WHERE ccps.categoryId = cc.idCategorie";
+                     ced.teamRegistrationFee,
+                     ced.playerLicenseFee,
+                     ced.refereeDefrayalAmount,
+                     DATE_FORMAT(ced.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
+                     DATE_FORMAT(ced.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline
+              FROM Championnat_Editions ced, Championnat_Categories cc
+              WHERE ced.categoryId = cc.idCategorie";
 
         if (isset($params['status']) && $params['status'] == 'open') {
-            $query .= " AND TIMESTAMP(ccps.registrationDeadline) > NOW()";
+            $query .= " AND TIMESTAMP(ced.registrationDeadline) > NOW()";
         }
 
         try {
@@ -89,19 +89,19 @@ class Championship {
 
         $query = "SELECT ce.idEquipe AS id,
                      ce.equipe AS name,
-                     ccps.id AS categoryBySeasonId,
-                     ccps.season,
+                     ced.id AS editionId,
+                     ced.season,
                      cc.idCategorie AS categoryId,
                      cc.categorie$lang AS categoryName,
                      cl.id AS clubId,
                      cl.club AS clubName,
                      ce.feePaymentDate
               FROM Championnat_Equipes ce,
-                   Championnat_Categories_Par_Saison ccps,
+                   Championnat_Editions ced,
                    Championnat_Categories cc,
                    ClubsFstb cl
-              WHERE ce.idCategorieParSaison = ccps.id
-              AND ccps.categoryId = cc.idCategorie
+              WHERE ce.idEdition = ced.id
+              AND ced.categoryId = cc.idCategorie
               AND ce.idClub = cl.id
               ORDER BY season DESC, categoryId, cl.nomPourTri, name";
 
@@ -124,7 +124,7 @@ class Championship {
                     'id' => intval($team['clubId']),
                     'name' => $team['clubName']
                 ),
-                'categoryBySeasonId' => intval($team['categoryBySeasonId']),
+                'editionId' => intval($team['editionId']),
                 'season' => array(
                     'startYear' => intval($team['season']),
                     'name' => getSeasonName($team['season'])
@@ -159,12 +159,12 @@ class Championship {
                      ce.equipe AS name,
                      cl.id AS clubId,
                      cl.club AS clubName,
-                     ccps.id AS categoryBySeasonId,
-                     ccps.teamRegistrationFee,
-                     ccps.playerLicenseFee,
-                     DATE_FORMAT(ccps.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
-                     DATE_FORMAT(ccps.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline,
-                     ccps.season,
+                     ced.id AS editionId,
+                     ced.teamRegistrationFee,
+                     ced.playerLicenseFee,
+                     DATE_FORMAT(ced.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
+                     DATE_FORMAT(ced.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline,
+                     ced.season,
                      cc.idCategorie AS categoryId,
                      cc.categorie$lang AS categoryName,
                      ce.idResponsable AS managerId,
@@ -179,13 +179,13 @@ class Championship {
                      ce.couleurMaillotExterieur,
                      ce.feePaymentDate
               FROM Championnat_Equipes ce,
-                   Championnat_Categories_Par_Saison ccps,
+                   Championnat_Editions ced,
                    Championnat_Categories cc,
                    ClubsFstb cl,
                    DBDPersonne p,
                    Lieux l
-              WHERE ce.idCategorieParSaison = ccps.id
-              AND ccps.categoryId = cc.idCategorie
+              WHERE ce.idEdition = ced.id
+              AND ced.categoryId = cc.idCategorie
               AND ce.idResponsable = p.idDbdPersonne
               AND ce.idLieuDomicile = l.id
               AND ce.idClub = cl.id
@@ -236,8 +236,8 @@ class Championship {
                 'id' => intval($team['clubId']),
                 'name' => $team['clubName']
             ),
-            'categoryBySeason' => array(
-                'id' => intval($team['categoryBySeasonId']),
+            'edition' => array(
+                'id' => intval($team['editionId']),
                 'registrationDeadline' => $team['registrationDeadline'],
                 'paymentDeadline' => $team['paymentDeadline'],
                 'teamRegistrationFee' => intval($team['teamRegistrationFee']),
@@ -311,7 +311,7 @@ class Championship {
     public function registerTeam(Request $request, Response $response) {
         $registration = $request->getParsedBody();
         $clubId = $registration['clubId'];
-        $categoryBySeasonId = $registration['categoryBySeasonId'];
+        $editionId = $registration['editionId'];
         $teamName = $registration['teamName'];
         $teamManagerId = $registration['teamManagerId'];
         $jerseyColorHome = $registration['jerseyColorHome'];
@@ -321,9 +321,9 @@ class Championship {
 
         // Getting information regarding if a club can only register a limited number of team in a category
         $spotLimitationQuery = "SELECT c.isNbSpotLimitedByClub
-                            FROM Championnat_Categories c, Championnat_Categories_Par_Saison cps
+                            FROM Championnat_Categories c, Championnat_Editions cps
                             WHERE c.idCategorie = cps.categoryId
-                            AND cps.id = {$categoryBySeasonId}";
+                            AND cps.id = {$editionId}";
         try {
             $result = $this->db->prepare($spotLimitationQuery);
             $result->execute();
@@ -342,12 +342,12 @@ class Championship {
                                 (SELECT COUNT(*)
                                  FROM Championnat_Equipes
                                  WHERE idClub = {$clubId}
-                                 AND idCategorieParSaison = {$categoryBySeasonId}) AS nbRegisteredTeam,
+                                 AND idEdition = {$editionId}) AS nbRegisteredTeam,
                                 (SELECT cpc.nbPlaces
-                                 FROM Championnat_Clubs_Places_Categories cpc, Championnat_Categories_Par_Saison cps
+                                 FROM Championnat_Clubs_Places_Categories cpc, Championnat_Editions cps
                                  WHERE cpc.idCategorie = cps.categoryId
                                  AND cpc.idClub = {$clubId}
-                                 AND cps.id = {$categoryBySeasonId}) AS nbSpots";
+                                 AND cps.id = {$editionId}) AS nbSpots";
             try {
                 $result = $this->db->prepare($availableSpotsQuery);
                 $result->execute();
@@ -373,7 +373,7 @@ class Championship {
                       equipe,
                       idClub,
                       idResponsable,
-                      idCategorieParSaison,
+                      idEdition,
                       couleurMaillotDomicile,
                       couleurMaillotExterieur,
                       idLieuDomicile,
@@ -384,7 +384,7 @@ class Championship {
                       '{$teamName}',
                       {$clubId},
                       {$teamManagerId},
-                      {$categoryBySeasonId},
+                      {$editionId},
                       '{$jerseyColorHome}',
                       '{$jerseyColorAway}',
                       {$homeVenueId},
