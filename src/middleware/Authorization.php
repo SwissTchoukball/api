@@ -28,7 +28,8 @@ class Authorization {
                 $clubId = $request->getAttribute('routeInfo')[2]['clubId'];
 
                 if (!hasClubReadAccess($this->user, $clubId)) {
-                    return $response->withStatus(403);
+                    return $response->withStatus(403)
+                        ->write('No club read access');
                 }
 
                 if (!array_key_exists(3, $path)) {
@@ -37,14 +38,16 @@ class Authorization {
                 }
                 else if ($path[3] == 'members') {
                     if (!hasClubMembersReadAccess($this->user, $clubId)) {
-                        return $response->withStatus(403);
+                        return $response->withStatus(403)
+                            ->write('No club members read access');
                     }
 
                     $response = $next($request, $response);
                 }
                 else if ($path[3] == 'teams') {
                     if (!hasClubTeamsReadAccess($this->user, $clubId)) {
-                        return $response->withStatus(403);
+                        return $response->withStatus(403)
+                            ->write('No club teams read access');
                     }
 
                     $response = $next($request, $response);
@@ -52,12 +55,13 @@ class Authorization {
                 else {
                     // If the path continue after the clubId but was not caught previously,
                     // we don't know the path, so we don't give access
-                    return $response->withStatus(403);
+                    return $response->withStatus(404);
                 }
             }
             else {
                 // If no clubId is given
-                $response = $response->withStatus(400);
+                $response = $response->withStatus(400)
+                    ->write('No club id given');
             }
         }
         else if ($path[1] == 'championship' && $method == 'GET') {
