@@ -214,15 +214,9 @@ class Championship {
             $returnedPlayer = array(
                 'id' => intval($player['id']),
                 'lastName' => $player['lastName'],
-                'firstName' => $player['firstName']
+                'firstName' => $player['firstName'],
+                'licensePaymentDate' => $player['licensePaymentDate']
             );
-
-            if (hasClubFinancesReadAccess($this->user, $team['clubId']) ||
-                hasClubTeamsReadAccess($this->user, $team['clubId']) ||
-                hasFinancesReadAccess($this->user) ||
-                hasChampionshipReadAccess($this->user)) {
-                $returnedPlayer['licensePaymentDate'] = $player['licensePaymentDate'];
-            }
 
             array_push($players, $returnedPlayer);
         }
