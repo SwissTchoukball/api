@@ -442,9 +442,10 @@ class Championship {
                 ->write($e);
         }
 
-        // Informing the head of finance and head of championship.
+        // Informing the head of finance, head of championship and the developers
         $this->mailer->addAddress($this->emailAddresses['headOfChampionship']);
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
+        $this->mailer->addAddress($this->emailAddresses['developers']);
         $this->mailer->Subject = 'Ajout de ' . count($playersId) . ' joueur(s)';
         // TODO: Give more informations
         $this->mailer->Body = 'Joueur(s) ajouté(s)';
