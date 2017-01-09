@@ -274,6 +274,12 @@ class Championship {
 
     private function _registerPlayers(Array $playersId, $teamId) {
 
+        $playerListInQuery = '';
+        foreach ($playersId as $playerId) {
+            $playerListInQuery .= "($teamId, $playerId, {$this->user['id']}, NOW()),";
+        }
+        $playerListInQuery = rtrim($playerListInQuery, ","); // Removing extra comma
+
         // Saving the players in the database
         $playerQuery = "INSERT INTO Championnat_Joueurs (
                         teamId,
@@ -281,12 +287,7 @@ class Championship {
                         registrationAuthorId,
                         registrationDate
                     )
-                    VALUES ";
-
-        foreach ($playersId as $playerId) {
-            $playerQuery .= "($teamId, $playerId, {$this->user['id']}, NOW()),";
-        }
-        $playerQuery = rtrim($playerQuery, ","); // Removing extra comma
+                    VALUES $playerListInQuery";
 
         try {
             $this->db->exec($playerQuery);
