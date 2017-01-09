@@ -200,6 +200,7 @@ class Championship {
         $playersQuery = "SELECT p.idDbdPersonne AS id,
                                 p.nom AS lastName,
                                 p.prenom AS firstName,
+                                p.suspendu AS suspended,
                                 cj.licensePaymentDate
                          FROM Championnat_Joueurs cj, DBDPersonne p
                          WHERE cj.personId = p.idDbdPersonne
@@ -215,6 +216,7 @@ class Championship {
                 'id' => intval($player['id']),
                 'lastName' => $player['lastName'],
                 'firstName' => $player['firstName'],
+                'suspended' => intval($player['suspended']) == 1,
                 'licensePaymentDate' => $player['licensePaymentDate']
             );
 
