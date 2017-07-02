@@ -34,7 +34,7 @@ class Clubs {
               FROM ClubsFstb cl
               LEFT OUTER JOIN DBDPersonne p ON p.idDbdPersonne = cl.idPresident
               LEFT OUTER JOIN Canton ca ON ca.id = cl.canton
-              WHERE cl.actif = 1
+              WHERE cl.statusId = 1
               ORDER BY cl.nomPourTri";
 
         $result = $this->db->prepare($query);
@@ -61,7 +61,7 @@ class Clubs {
         $clubId = $request->getAttribute('clubId');
         $lang = getLang($request);
 
-        $query = "SELECT cl.id, cl.nbIdClub, cl.club AS name, cl.nomComplet AS fullName, cl.nomPourTri AS sortingName, cl.actif,
+        $query = "SELECT cl.id, cl.nbIdClub, cl.club AS name, cl.nomComplet AS fullName, cl.nomPourTri AS sortingName, cl.statusId,
                      cl.adresse AS clubAddress, cl.npa AS clubPostalCode, cl.ville AS clubCity, cl.email AS clubEmail, cl.telephone AS clubPhoneNumber,
                      p.nom AS presidentLastName, p.prenom AS presidentFirstName,
                      p.adresse AS presidentAddress, p.npa AS presidentPostalCode, p.ville AS presidentCity, p.email AS presidentEmail, p.telPrive AS presidentPhoneNumber, p.portable AS presidentMobileNumber,
@@ -79,7 +79,7 @@ class Clubs {
 
         $data = $this->_createClubArray($club);
 
-        $data['actif'] = $club['actif'] == 1;
+        $data['actif'] = $club['statusId'] == 1;
 
         //TODO: It might be better to have a separate query in here to get the championshipSpots.
         $data['championshipSpots'] = array();
