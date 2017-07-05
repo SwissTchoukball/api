@@ -155,46 +155,7 @@ class Championship {
         $lang = getLang($request);
 
         // Loading team
-        $teamQuery = "SELECT ce.idEquipe AS id,
-                     ce.equipe AS name,
-                     cl.id AS clubId,
-                     cl.club AS clubName,
-                     ced.id AS editionId,
-                     ced.teamRegistrationFee,
-                     ced.playerLicenseFee,
-                     DATE_FORMAT(ced.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
-                     DATE_FORMAT(ced.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline,
-                     ced.season,
-                     cc.idCategorie AS categoryId,
-                     cc.categorie$lang AS categoryName,
-                     ce.idResponsable AS managerId,
-                     p.nom AS managerLastName,
-                     p.prenom AS managerFirstName,
-                     p.email AS managerEmail,
-                     p.telPrive AS managerPhoneNumber,
-                     p.portable AS managerMobileNumber,
-                     ce.idLieuDomicile AS homeVenueId,
-                     l.nom AS homeVenueName,
-                     ce.couleurMaillotDomicile,
-                     ce.couleurMaillotExterieur,
-                     ce.feePaymentDate
-              FROM Championnat_Equipes ce,
-                   Championnat_Editions ced,
-                   Championnat_Categories cc,
-                   ClubsFstb cl,
-                   DBDPersonne p,
-                   Lieux l
-              WHERE ce.idEdition = ced.id
-              AND ced.categoryId = cc.idCategorie
-              AND ce.idResponsable = p.idDbdPersonne
-              AND ce.idLieuDomicile = l.id
-              AND ce.idClub = cl.id
-              AND ce.idEquipe = :teamId";
-
-        $teamResult = $this->db->prepare($teamQuery);
-        $teamResult->execute(array(':teamId' => $teamId));
-
-        $team = $teamResult->fetch(PDO::FETCH_ASSOC);
+        $team = $this->_getTeam($teamId, $lang);
 
         // Loading players
         $playersQuery = "SELECT p.idDbdPersonne AS id,
@@ -272,30 +233,6 @@ class Championship {
         $newResponse = $response->withJson($data);
 
         return $newResponse;
-    }
-
-    private function _registerPlayers(Array $playersId, $teamId) {
-
-        $playerListInQuery = '';
-        foreach ($playersId as $playerId) {
-            $playerListInQuery .= "($teamId, $playerId, {$this->user['id']}, NOW()),";
-        }
-        $playerListInQuery = rtrim($playerListInQuery, ","); // Removing extra comma
-
-        // Saving the players in the database
-        $playerQuery = "INSERT INTO Championnat_Joueurs (
-                        teamId,
-                        personId,
-                        registrationAuthorId,
-                        registrationDate
-                    )
-                    VALUES $playerListInQuery";
-
-        try {
-            $this->db->exec($playerQuery);
-        } catch (PDOException $e) {
-            throw $e;
-        }
     }
 
     /**
@@ -407,12 +344,12 @@ class Championship {
                 ->write($e);
         }
 
-        // Informing the head of finance and head of championship.
         $this->mailer->addAddress($this->emailAddresses['headOfChampionship']);
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
+        $this->mailer->addAddress($this->emailAddresses['developers']);
         $this->mailer->Subject = 'Ajout d\'une équipe';
-        // TODO: Give more informations
-        $this->mailer->Body = 'Une équipe de ' . count($playersId) . ' joueurs a été ajoutée';
+        $this->mailer->Body = 'L\'équipe « ' . $teamName . ' » a été ajoutée avec ' . count($playersId) . ' joueurs.';
+        $this->mailer->Body .= '\n\nAuteur de l\'action : ' . $this->user['username'];
 
         if(!$this->mailer->send()) {
             //TODO: Define where we can log that.
@@ -436,6 +373,9 @@ class Championship {
         $registration = $request->getParsedBody();
         $playersId = $registration['playersId'];
         $teamId = $registration['teamId'];
+        $lang = getLang($request);
+
+        $team = $this->_getTeam($teamId, $lang);
 
         try {
             $this->_registerPlayers($playersId, $teamId);
@@ -445,13 +385,12 @@ class Championship {
                 ->write($e);
         }
 
-        // Informing the head of finance, head of championship and the developers
         $this->mailer->addAddress($this->emailAddresses['headOfChampionship']);
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
         $this->mailer->addAddress($this->emailAddresses['developers']);
-        $this->mailer->Subject = 'Ajout de ' . count($playersId) . ' joueur(s)';
-        // TODO: Give more informations
-        $this->mailer->Body = 'Joueur(s) ajouté(s)';
+        $this->mailer->Subject = 'Joueur(s) ajouté(s)';
+        $this->mailer->Body = 'Ajout de ' . count($playersId) . ' joueur(s) pour l\'équipe « ' . $team['name'] . ' »';
+        $this->mailer->Body .= '\n\nAuteur de l\'action : ' . $this->user['username'];
 
         if(!$this->mailer->send()) {
             //TODO: Define where we can log that.
@@ -462,5 +401,72 @@ class Championship {
         }
 
         return $response;
+    }
+
+    private function _getTeam($teamId, $lang) {
+        $teamQuery = "SELECT ce.idEquipe AS id,
+                     ce.equipe AS name,
+                     cl.id AS clubId,
+                     cl.club AS clubName,
+                     ced.id AS editionId,
+                     ced.teamRegistrationFee,
+                     ced.playerLicenseFee,
+                     DATE_FORMAT(ced.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
+                     DATE_FORMAT(ced.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline,
+                     ced.season,
+                     cc.idCategorie AS categoryId,
+                     cc.categorie$lang AS categoryName,
+                     ce.idResponsable AS managerId,
+                     p.nom AS managerLastName,
+                     p.prenom AS managerFirstName,
+                     p.email AS managerEmail,
+                     p.telPrive AS managerPhoneNumber,
+                     p.portable AS managerMobileNumber,
+                     ce.idLieuDomicile AS homeVenueId,
+                     l.nom AS homeVenueName,
+                     ce.couleurMaillotDomicile,
+                     ce.couleurMaillotExterieur,
+                     ce.feePaymentDate
+              FROM Championnat_Equipes ce,
+                   Championnat_Editions ced,
+                   Championnat_Categories cc,
+                   ClubsFstb cl,
+                   DBDPersonne p,
+                   Lieux l
+              WHERE ce.idEdition = ced.id
+              AND ced.categoryId = cc.idCategorie
+              AND ce.idResponsable = p.idDbdPersonne
+              AND ce.idLieuDomicile = l.id
+              AND ce.idClub = cl.id
+              AND ce.idEquipe = :teamId";
+
+        $teamResult = $this->db->prepare($teamQuery);
+        $teamResult->execute(array(':teamId' => $teamId));
+
+        return $teamResult->fetch(PDO::FETCH_ASSOC);
+    }
+
+    private function _registerPlayers(Array $playersId, $teamId) {
+
+        $playerListInQuery = '';
+        foreach ($playersId as $playerId) {
+            $playerListInQuery .= "($teamId, $playerId, {$this->user['id']}, NOW()),";
+        }
+        $playerListInQuery = rtrim($playerListInQuery, ","); // Removing extra comma
+
+        // Saving the players in the database
+        $playerQuery = "INSERT INTO Championnat_Joueurs (
+                        teamId,
+                        personId,
+                        registrationAuthorId,
+                        registrationDate
+                    )
+                    VALUES $playerListInQuery";
+
+        try {
+            $this->db->exec($playerQuery);
+        } catch (PDOException $e) {
+            throw $e;
+        }
     }
 }
