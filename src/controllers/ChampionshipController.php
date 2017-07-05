@@ -347,9 +347,9 @@ class Championship {
         $this->mailer->addAddress($this->emailAddresses['headOfChampionship']);
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
         $this->mailer->addAddress($this->emailAddresses['developers']);
-        $this->mailer->Subject = 'Ajout d\'une équipe';
-        $this->mailer->Body = 'L\'équipe « ' . $teamName . ' » a été ajoutée avec ' . count($playersId) . ' joueurs.';
-        $this->mailer->Body .= '\n\nAuteur de l\'action : ' . $this->user['username'];
+        $this->mailer->Subject = "Ajout d'une équipe";
+        $this->mailer->Body = "L'équipe « " . $teamName . " » a été ajoutée avec " . count($playersId) . " joueurs.";
+        $this->mailer->Body .= "\n\nAuteur de l'action : " . $this->user['username'];
 
         if(!$this->mailer->send()) {
             //TODO: Define where we can log that.
@@ -388,9 +388,9 @@ class Championship {
         $this->mailer->addAddress($this->emailAddresses['headOfChampionship']);
         $this->mailer->addAddress($this->emailAddresses['headOfFinances']);
         $this->mailer->addAddress($this->emailAddresses['developers']);
-        $this->mailer->Subject = 'Joueur(s) ajouté(s)';
-        $this->mailer->Body = 'Ajout de ' . count($playersId) . ' joueur(s) pour l\'équipe « ' . $team['name'] . ' »';
-        $this->mailer->Body .= '\n\nAuteur de l\'action : ' . $this->user['username'];
+        $this->mailer->Subject = "Joueur(s) ajouté(s)";
+        $this->mailer->Body = "Ajout de " . count($playersId) . " joueur(s) pour l'équipe « " . $team['name'] . " »";
+        $this->mailer->Body .= "\n\nAuteur de l'action : " . $this->user['username'];
 
         if(!$this->mailer->send()) {
             //TODO: Define where we can log that.
