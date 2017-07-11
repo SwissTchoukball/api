@@ -43,7 +43,8 @@ class Championship {
                      DATE_FORMAT(ced.registrationDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS registrationDeadline,
                      DATE_FORMAT(ced.paymentDeadline, '%Y-%m-%dT%H:%i:%s.000Z') AS paymentDeadline
               FROM Championnat_Editions ced, Championnat_Categories cc
-              WHERE ced.categoryId = cc.idCategorie";
+              WHERE ced.categoryId = cc.idCategorie
+              ORDER BY ced.season DESC, categoryId";
 
         if (isset($params['status']) && $params['status'] == 'open') {
             $query .= " AND TIMESTAMP(ced.registrationDeadline) > NOW()";
