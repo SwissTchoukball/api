@@ -17,6 +17,7 @@ class Authorization {
     public function __construct(ContainerInterface $ci)
     {
         $this->user = $ci['user'];
+        $this->db = $ci['db'];
     }
 
     public function __invoke(Request $request, Response $response, callable $next) {
@@ -77,6 +78,17 @@ class Authorization {
             if (!hasClubTeamsWriteAccess($this->user, $registration['clubId']) &&
                 !hasChampionshipWriteAccess($this->user)) {
                 return $response->withStatus(403);
+            }
+
+            $response = $next($request, $response);
+        }
+        else if ($method == 'DELETE' && $path[1] == 'championship' && $path[2] == 'license') {
+            $licenseId = $request->getAttribute('routeInfo')[2]['licenseId'];
+            $clubId = getClubOfLicense($this->db, $licenseId);
+            if (!hasClubTeamsWriteAccess($this->user, $clubId) &&
+                !hasChampionshipWriteAccess($this->user)) {
+                return $response->withStatus(403)
+                    ->write('License is not in your club');
             }
 
             $response = $next($request, $response);

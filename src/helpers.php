@@ -68,6 +68,24 @@ function getUserByUsername($db, $username) {
     
 }
 
+function getClubOfLicense($db, $licenseId) {
+    $query = "SELECT ce.idClub as clubId
+              FROM Championnat_Equipes ce, Championnat_Joueurs cj
+              WHERE ce.idEquipe = cj.teamId
+              AND cj.id = :licenseId
+              LIMIT 1";
+    try {
+        $result = $db->prepare($query);
+        $result->execute(array(':licenseId' => $licenseId));
+    } catch (PDOException $e) {
+        throw $e;
+    }
+
+    $data = $result->fetch(PDO::FETCH_ASSOC);
+
+    return $data['clubId'];
+}
+
 function getSeasonName($startYear) {
     return $startYear . ' - ' . ($startYear + 1);
 }

@@ -164,6 +164,7 @@ class Championship {
                                 p.nom AS lastName,
                                 p.prenom AS firstName,
                                 p.suspendu AS suspended,
+                                cj.id AS licenseId,
                                 cj.licensePaymentDate
                          FROM Championnat_Joueurs cj, DBDPersonne p
                          WHERE cj.personId = p.idDbdPersonne
@@ -180,6 +181,7 @@ class Championship {
                 'lastName' => $player['lastName'],
                 'firstName' => $player['firstName'],
                 'suspended' => intval($player['suspended']) == 1,
+                'licenseId' => intval($player['licenseId']),
                 'licensePaymentDate' => $player['licensePaymentDate']
             );
 
@@ -401,6 +403,27 @@ class Championship {
         } else {
             error_log('Message has been sent');
         }
+
+        return $response;
+    }
+
+    /**
+     * Remove a license, if it hasn't been payed already.
+     *
+     * @param Request $request
+     * @param Response $response
+     * @return Response
+     */
+    public function removeLicense(Request $request, Response $response) {
+        $licenseId = $request->getAttribute('licenseId');
+
+        $deleteLicenseQuery = "DELETE FROM Championnat_Joueurs
+                              WHERE id=:licenseId
+                              AND licensePaymentDate IS NULL
+                              LIMIT 1";
+
+        $deleteLicenseResult = $this->db->prepare($deleteLicenseQuery);
+        $deleteLicenseResult->execute(array(':licenseId' => $licenseId));
 
         return $response;
     }

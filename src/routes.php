@@ -21,3 +21,6 @@ $app->get('/venues', '\Venues:getVenues');
 // POST requests
 $app->post('/championship/register-team', '\Championship:registerTeam');
 $app->post('/championship/register-players', '\Championship:registerPlayers');
+
+// DELETE requests
+$app->delete('/championship/license/{licenseId}', '\Championship:removeLicense');
