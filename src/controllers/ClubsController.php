@@ -31,7 +31,7 @@ class Clubs {
                      p.nom AS presidentLastName, p.prenom AS presidentFirstName,
                      p.adresse AS presidentAddress, p.npa AS presidentPostalCode, p.ville AS presidentCity, p.email AS presidentEmail, p.telPrive AS presidentPhoneNumber, p.portable AS presidentMobileNumber,
                      cl.url, cl.facebookUsername, cl.twitterUsername, cl.flickrUsername, cl.canton AS cantonId, ca.sigle, ca.nomCantonEn, ca.nomCantonFr, ca.nomCantonDe, ca.nomCantonIt
-              FROM ClubsFstb cl
+              FROM clubs cl
               LEFT OUTER JOIN DBDPersonne p ON p.idDbdPersonne = cl.idPresident
               LEFT OUTER JOIN Canton ca ON ca.id = cl.canton
               WHERE cl.statusId = 1
@@ -67,7 +67,7 @@ class Clubs {
                      p.adresse AS presidentAddress, p.npa AS presidentPostalCode, p.ville AS presidentCity, p.email AS presidentEmail, p.telPrive AS presidentPhoneNumber, p.portable AS presidentMobileNumber,
                      cl.url, cl.facebookUsername, cl.twitterUsername, cl.flickrUsername, cl.canton AS cantonId, ca.sigle, ca.nomCanton$lang AS cantonName,
                      ccpc.idCategorie AS championshipCategoryId, ccpc.nbPlaces AS championshipNbSpots
-              FROM ClubsFstb cl
+              FROM clubs cl
               LEFT OUTER JOIN DBDPersonne p ON p.idDbdPersonne = cl.idPresident
               LEFT OUTER JOIN Canton ca ON ca.id = cl.canton
               LEFT OUTER JOIN Championnat_Clubs_Places_Categories ccpc ON ccpc.idClub = cl.id
@@ -112,10 +112,10 @@ class Clubs {
                     p.prenom AS firstName,
                     CONCAT(p.prenom, ' ', p.nom) AS fullName,
                     p.email,
-                    p.emailFSTB,
+                    p.emailFederation,
                     p.telPrive AS phoneNumber,
                     p.portable AS mobileNumber
-             FROM DBDPersonne p, ClubsFstb c
+             FROM DBDPersonne p, clubs c
              WHERE c.id = :clubId
              AND p.idClub = c.nbIdClub
              AND (p.nom LIKE :searchedTerm OR p.prenom LIKE :searchedTerm)";
@@ -158,7 +158,7 @@ class Clubs {
               FROM Championnat_Equipes ce,
                    Championnat_Editions ced,
                    Championnat_Categories cc,
-                   ClubsFstb cl
+                   clubs cl
               WHERE ce.idEdition = ced.id
               AND ced.categoryId = cc.idCategorie
               AND ce.idClub = cl.id

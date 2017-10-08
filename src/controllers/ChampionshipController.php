@@ -101,7 +101,7 @@ class Championship {
               FROM Championnat_Equipes ce,
                    Championnat_Editions ced,
                    Championnat_Categories cc,
-                   ClubsFstb cl
+                   clubs cl
               WHERE ce.idEdition = ced.id
               AND ced.categoryId = cc.idCategorie
               AND ce.idClub = cl.id
@@ -455,7 +455,7 @@ class Championship {
               FROM Championnat_Equipes ce,
                    Championnat_Editions ced,
                    Championnat_Categories cc,
-                   ClubsFstb cl,
+                   clubs cl,
                    DBDPersonne p,
                    Lieux l
               WHERE ce.idEdition = ced.id
