@@ -36,7 +36,7 @@ $app->add(new \Slim\Middleware\HttpBasicAuthentication([
 
 // CORS
 $app->add(new \Tuupola\Middleware\Cors([
-    'origin' => ['http://localhost:8081', 'https://tchoukball.ch', 'https://www.tchoukball.ch'],
+    'origin' => ['http://localhost:8888', 'https://tchoukball.ch', 'https://www.tchoukball.ch'],
     'methods' => ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     'headers.allow' => ['Content-Type', 'X-Requested-With', 'Origin', 'Authorization', 'Accept-Language', 'Accept'],
     'headers.expose' => [],
