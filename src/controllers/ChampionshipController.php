@@ -473,6 +473,10 @@ class Championship {
 
     private function _registerPlayers(Array $playersId, $teamId) {
 
+        if (count($playersId) <= 0) {
+            return;
+        }
+
         $playerListInQuery = '';
         foreach ($playersId as $playerId) {
             $playerListInQuery .= "($teamId, $playerId, {$this->user['id']}, NOW()),";
